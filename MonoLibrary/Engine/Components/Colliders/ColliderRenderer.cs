@@ -4,19 +4,13 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoLibrary.Engine.Components.Interfaces;
 using MonoLibrary.Engine.Objects;
 
-namespace MonoLibrary.Engine.Components.Colliders
+namespace MonoLibrary.Engine.Components.Colliders;
+
+public abstract class ColliderRenderer(GameObject owner) : IDrawComponent
 {
-    public abstract class ColliderRenderer : IDrawComponent
-    {
-        public GameObject Owner { get; }
+    public GameObject Owner { get; } = owner;
 
-        public virtual Color Color { get; set; } = Color.Yellow;
+    public virtual Color Color { get; set; } = Color.Yellow;
 
-        protected ColliderRenderer(GameObject owner)
-        {
-            Owner = owner;
-        }
-
-        public abstract void Draw(float time, SpriteBatch spriteBatch);
-    }
+    public abstract void Draw(float time, SpriteBatch spriteBatch);
 }

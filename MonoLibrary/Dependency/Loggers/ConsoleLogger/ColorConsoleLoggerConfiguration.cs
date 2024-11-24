@@ -3,18 +3,17 @@
 using System;
 using System.Collections.Generic;
 
-namespace MonoLibrary.Dependency.Loggers.ConsoleLogger
+namespace MonoLibrary.Dependency.Loggers.ConsoleLogger;
+
+public sealed class ColorConsoleLoggerConfiguration
 {
-    public sealed class ColorConsoleLoggerConfiguration
+    public Dictionary<LogLevel, ConsoleColor> LogLevelToColorMap { get; set; } = new()
     {
-        public Dictionary<LogLevel, ConsoleColor> LogLevelToColorMap { get; set; } = new()
-        {
-            [LogLevel.Trace] = ConsoleColor.DarkBlue,
-            [LogLevel.Debug] = ConsoleColor.Blue,
-            [LogLevel.Information] = ConsoleColor.Green,
-            [LogLevel.Warning] = ConsoleColor.DarkYellow,
-            [LogLevel.Error] = ConsoleColor.Red,
-            [LogLevel.Critical] = ConsoleColor.DarkMagenta
-        };
-    }
+        [LogLevel.Trace] = ConsoleColor.DarkBlue,
+        [LogLevel.Debug] = ConsoleColor.Blue,
+        [LogLevel.Information] = ConsoleColor.Green,
+        [LogLevel.Warning] = ConsoleColor.DarkYellow,
+        [LogLevel.Error] = ConsoleColor.Red,
+        [LogLevel.Critical] = ConsoleColor.DarkMagenta
+    };
 }

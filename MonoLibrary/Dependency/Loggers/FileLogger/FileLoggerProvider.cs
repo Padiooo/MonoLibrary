@@ -5,51 +5,50 @@ using System;
 using System.Collections.Concurrent;
 using System.IO;
 
-namespace MonoLibrary.Dependency.Loggers.FileLogger
+namespace MonoLibrary.Dependency.Loggers.FileLogger;
+
+[ProviderAlias("FileLogger")]
+public sealed class FileLoggerProvider : ILoggerProvider
 {
-    [ProviderAlias("FileLogger")]
-    public sealed class FileLoggerProvider : ILoggerProvider
+    private readonly IDisposable _onChangeToken;
+    private readonly ConcurrentDictionary<string, FileLogger> _loggers = new(StringComparer.OrdinalIgnoreCase);
+
+    private StreamWriter _stream;
+
+    public FileLoggerProvider(IOptionsMonitor<FileLoggerConfiguration> config)
     {
-        private readonly IDisposable _onChangeToken;
-        private readonly ConcurrentDictionary<string, FileLogger> _loggers = new(StringComparer.OrdinalIgnoreCase);
+        OnConfigurationChanged(config.CurrentValue);
+        _onChangeToken = config.OnChange(OnConfigurationChanged);
+    }
 
-        private StreamWriter _stream;
+    public ILogger CreateLogger(string categoryName) => _loggers.GetOrAdd(categoryName, name => new FileLogger(name, () => _stream));
 
-        public FileLoggerProvider(IOptionsMonitor<FileLoggerConfiguration> config)
+    private void OnConfigurationChanged(FileLoggerConfiguration config)
+    {
+        if (_stream != null)
         {
-            OnConfigurationChanged(config.CurrentValue);
-            _onChangeToken = config.OnChange(OnConfigurationChanged);
+            _stream.Flush();
+            _stream.Dispose();
         }
 
-        public ILogger CreateLogger(string categoryName) => _loggers.GetOrAdd(categoryName, name => new FileLogger(name, () => _stream));
+        var file = new FileInfo(config.GetFullPath());
 
-        private void OnConfigurationChanged(FileLoggerConfiguration config)
+        file.Directory.Create();
+
+        if (file.Exists)
         {
-            if (_stream != null)
-            {
-                _stream.Flush();
-                _stream.Dispose();
-            }
-
-            var file = new FileInfo(config.GetFullPath());
-
-            file.Directory.Create();
-
-            if (file.Exists)
-            {
-                _stream = new StreamWriter(file.Open(FileMode.Append, FileAccess.Write, FileShare.Read));
-                _stream.WriteLine();
-            }
-            else
-                _stream = new StreamWriter(file.Open(FileMode.Create, FileAccess.Write, FileShare.Read));
+            _stream = new StreamWriter(file.Open(FileMode.Append, FileAccess.Write, FileShare.Read));
+            _stream.WriteLine();
         }
+        else
+            _stream = new StreamWriter(file.Open(FileMode.Create, FileAccess.Write, FileShare.Read));
+    }
 
-        public void Dispose()
-        {
-            _loggers.Clear();
-            _onChangeToken?.Dispose();
-            _stream?.Flush();
-            _stream?.Dispose();
-        }
+    public void Dispose()
+    {
+        _loggers.Clear();
+        _onChangeToken?.Dispose();
+        _stream?.Flush();
+        _stream?.Dispose();
     }
 }

@@ -1,7 +1,6 @@
-﻿namespace MonoLibrary.Engine.Components.Interfaces
+﻿namespace MonoLibrary.Engine.Components.Interfaces;
+
+public interface IUpdateComponent : IComponent
 {
-    public interface IUpdateComponent : IComponent
-    {
-        void Update(float time);
-    }
+    void Update(float time);
 }

@@ -2,17 +2,16 @@
 
 using System;
 
-namespace MonoLibrary.Engine.Network.Datas
+namespace MonoLibrary.Engine.Network.Datas;
+
+public interface INetVariable : IDisposable
 {
-    public interface INetVariable : IDisposable
-    {
-        int DirtyIndex { get; set; }
+    int DirtyIndex { get; set; }
 
-        event Action<int> OnDirty;
+    event Action<int> OnDirty;
 
-        void Serialize(NetDataWriter writer, bool full);
-        void Deserialize(NetDataReader reader);
+    void Serialize(NetDataWriter writer, bool full);
+    void Deserialize(NetDataReader reader);
 
-        void ClearDirty();
-    }
+    void ClearDirty();
 }

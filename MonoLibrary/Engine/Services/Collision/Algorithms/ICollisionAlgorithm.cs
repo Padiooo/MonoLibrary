@@ -2,12 +2,11 @@
 
 using System.Collections.Generic;
 
-namespace MonoLibrary.Engine.Services.Collision.Algorithms
-{
-    public interface ICollisionAlgorithm
-    {
-        void Resolve(IList<IColliderComponent> colliders);
+namespace MonoLibrary.Engine.Services.Collision.Algorithms;
 
-        IEnumerable<IColliderComponent> Query(IColliderComponent area, IList<IColliderComponent> colliders);
-    }
+public interface ICollisionAlgorithm
+{
+    void Resolve(IList<IColliderComponent> colliders);
+
+    IEnumerable<IColliderComponent> Query(IColliderComponent area, IList<IColliderComponent> colliders);
 }

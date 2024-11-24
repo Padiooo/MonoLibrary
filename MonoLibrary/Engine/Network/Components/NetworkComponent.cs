@@ -4,81 +4,75 @@ using MonoLibrary.Engine.Objects;
 
 using System.Diagnostics;
 
-namespace MonoLibrary.Engine.Network.Components
+namespace MonoLibrary.Engine.Network.Components;
+
+[DebuggerDisplay("{ToString()}")]
+public abstract class NetworkComponent(GameObject owner) : NetVarContainer, IUpdateComponent
 {
-    [DebuggerDisplay("{ToString()}")]
-    public abstract class NetworkComponent : NetVarContainer, IUpdateComponent
+    public NetworkIdentityComponent Identity { get; private set; }
+
+    public GameObject Owner { get; } = owner;
+
+    internal void Initialize(NetworkIdentityComponent identity)
     {
-        public NetworkIdentityComponent Identity { get; private set; }
+        Identity = identity;
 
-        public GameObject Owner { get; }
+        Init();
 
-        protected NetworkComponent(GameObject owner)
-        {
-            Owner = owner;
-        }
+        if (identity.IsServer)
+            ServerInit();
+        else
+            ClientInit();
+    }
 
-        internal void Initialize(NetworkIdentityComponent identity)
-        {
-            Identity = identity;
+    /// <summary>
+    /// Called when this <see cref="NetworkComponent"/> has received its <see cref="Identity"/>. <br/>
+    /// On server, called before first serialization. <br/>
+    /// On client, called after first serialization.
+    /// </summary>
+    protected virtual void Init() { }
 
-            Init();
+    /// <summary>
+    /// Called only on server.
+    /// </summary>
+    protected virtual void ServerInit() { }
 
-            if (identity.IsServer)
-                ServerInit();
-            else
-                ClientInit();
-        }
+    /// <summary>
+    /// Called only on client.
+    /// </summary>
+    protected virtual void ClientInit() { }
 
-        /// <summary>
-        /// Called when this <see cref="NetworkComponent"/> has received its <see cref="Identity"/>. <br/>
-        /// On server, called before first serialization. <br/>
-        /// On client, called after first serialization.
-        /// </summary>
-        protected virtual void Init() { }
+    public void Update(float time)
+    {
+        if (Identity is null)
+            return;
 
-        /// <summary>
-        /// Called only on server.
-        /// </summary>
-        protected virtual void ServerInit() { }
+        if (Identity.IsLocalPlayer && !Identity.IsServer)
+            UpdatePlayer(time);
+        else
+            UpdateServer(time);
+    }
 
-        /// <summary>
-        /// Called only on client.
-        /// </summary>
-        protected virtual void ClientInit() { }
+    /// <summary>
+    /// Run only on client side, when <see cref="NetworkIdentityComponent.IsLocalPlayer"/> is <see langword="true"/>.
+    /// </summary>
+    /// <remarks>
+    /// Should only deal with local user inputs.
+    /// </remarks>
+    /// <param name="time"></param>
+    protected virtual void UpdatePlayer(float time) { }
 
-        public void Update(float time)
-        {
-            if (Identity is null)
-                return;
+    /// <summary>
+    /// Run when <see cref="UpdatePlayer(float)"/> is not run.
+    /// </summary>
+    /// <remarks>
+    /// Should contain all the update logic, shared both by client and server, without input dependency.
+    /// </remarks>
+    /// <param name="time"></param>
+    protected virtual void UpdateServer(float time) { }
 
-            if (Identity.IsLocalPlayer && !Identity.IsServer)
-                UpdatePlayer(time);
-            else
-                UpdateServer(time);
-        }
-
-        /// <summary>
-        /// Run only on client side, when <see cref="NetworkIdentityComponent.IsLocalPlayer"/> is <see langword="true"/>.
-        /// </summary>
-        /// <remarks>
-        /// Should only deal with local user inputs.
-        /// </remarks>
-        /// <param name="time"></param>
-        protected virtual void UpdatePlayer(float time) { }
-
-        /// <summary>
-        /// Run when <see cref="UpdatePlayer(float)"/> is not run.
-        /// </summary>
-        /// <remarks>
-        /// Should contain all the update logic, shared both by client and server, without input dependency.
-        /// </remarks>
-        /// <param name="time"></param>
-        protected virtual void UpdateServer(float time) { }
-
-        public override string ToString()
-        {
-            return GetType().Name;
-        }
+    public override string ToString()
+    {
+        return GetType().Name;
     }
 }

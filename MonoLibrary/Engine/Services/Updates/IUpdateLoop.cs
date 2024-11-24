@@ -7,81 +7,75 @@ using MonoLibrary.Engine.Services.Helpers;
 using System;
 using System.Collections.Generic;
 
-namespace MonoLibrary.Engine.Services.Updates
+namespace MonoLibrary.Engine.Services.Updates;
+
+/// <summary>
+/// Must be thread safe.
+/// </summary>
+public interface IUpdateLoop
 {
     /// <summary>
-    /// Must be thread safe.
+    /// Registers the <paramref name="updatableService"/>.
     /// </summary>
-    public interface IUpdateLoop
+    /// <param name="updatableService"></param>
+    /// <returns>An <see cref="IDisposable"/> to unregister.</returns>
+    IDisposable Register(IUpdaterService updatableService);
+
+    /// <summary>
+    /// Ran at the beginning of <see cref="Game.Update(GameTime)"/>.
+    /// </summary>
+    void BeforeUpdate();
+
+    /// <summary>
+    /// Ran just before <see cref="Game.Update(GameTime)"/>, hence before <see cref="GameObject.Update(GameTime)"/>.
+    /// </summary>
+    void Update(float deltaTime);
+
+    /// <summary>
+    /// Ran at then end of <see cref="Game.Update(GameTime)"/>.
+    /// </summary>
+    void AfterUpdate();
+}
+
+public class ServiceUpdater(ILogger<ServiceUpdater> logger) : IUpdateLoop
+{
+    private readonly ILogger _logger = logger;
+    private readonly List<IUpdaterService> _services = [];
+
+    public IDisposable Register(IUpdaterService updatableService)
     {
-        /// <summary>
-        /// Registers the <paramref name="updatableService"/>.
-        /// </summary>
-        /// <param name="updatableService"></param>
-        /// <returns>An <see cref="IDisposable"/> to unregister.</returns>
-        IDisposable Register(IUpdaterService updatableService);
+        _services.Add(updatableService);
 
-        /// <summary>
-        /// Ran at the beginning of <see cref="Game.Update(GameTime)"/>.
-        /// </summary>
-        void BeforeUpdate();
+        _logger.LogInformation("Registered {interface}: {type}. Total: {count}.", nameof(IUpdaterService), updatableService.GetType().Name, _services.Count);
 
-        /// <summary>
-        /// Ran just before <see cref="Game.Update(GameTime)"/>, hence before <see cref="GameObject.Update(GameTime)"/>.
-        /// </summary>
-        void Update(float deltaTime);
-
-        /// <summary>
-        /// Ran at then end of <see cref="Game.Update(GameTime)"/>.
-        /// </summary>
-        void AfterUpdate();
+        return new Subscription<IUpdaterService>(updatableService, Remove);
     }
 
-    public class ServiceUpdater : IUpdateLoop
+    public void BeforeUpdate()
     {
-        private readonly ILogger _logger;
-        private readonly List<IUpdaterService> _services = new();
+        int count = _services.Count;
+        for (int i = 0; i < Math.Max(count, _services.Count); i++)
+            _services[i].BeforeUpdate();
+    }
 
-        public ServiceUpdater(ILogger<ServiceUpdater> logger)
-        {
-            _logger = logger;
-        }
+    public void Update(float deltaTime)
+    {
+        int count = _services.Count;
+        for (int i = 0; i < Math.Max(count, _services.Count); i++)
+            _services[i].Update(deltaTime);
+    }
 
-        public IDisposable Register(IUpdaterService updatableService)
-        {
-            _services.Add(updatableService);
+    public void AfterUpdate()
+    {
+        int count = _services.Count;
+        for (int i = 0; i < Math.Max(count, _services.Count); i++)
+            _services[i].AfterUpdate();
+    }
 
-            _logger.LogInformation("Registered {interface}: {type}. Total: {count}.", nameof(IUpdaterService), updatableService.GetType().Name, _services.Count);
+    private void Remove(IUpdaterService updatableService)
+    {
+        _services.Remove(updatableService);
 
-            return new Subscription<IUpdaterService>(updatableService, Remove);
-        }
-
-        public void BeforeUpdate()
-        {
-            int count = _services.Count;
-            for (int i = 0; i < Math.Max(count, _services.Count); i++)
-                _services[i].BeforeUpdate();
-        }
-
-        public void Update(float deltaTime)
-        {
-            int count = _services.Count;
-            for (int i = 0; i < Math.Max(count, _services.Count); i++)
-                _services[i].Update(deltaTime);
-        }
-
-        public void AfterUpdate()
-        {
-            int count = _services.Count;
-            for (int i = 0; i < Math.Max(count, _services.Count); i++)
-                _services[i].AfterUpdate();
-        }
-
-        private void Remove(IUpdaterService updatableService)
-        {
-            _services.Remove(updatableService);
-
-            _logger.LogInformation("Removed {interface}: {type}. Total: {count}", nameof(IUpdaterService), updatableService.GetType().Name, _services.Count);
-        }
+        _logger.LogInformation("Removed {interface}: {type}. Total: {count}", nameof(IUpdaterService), updatableService.GetType().Name, _services.Count);
     }
 }

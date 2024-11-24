@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace MonoLibrary.Engine.Pools
+namespace MonoLibrary.Engine.Pools;
+
+public interface IPooled<T> : IDisposable
 {
-    public interface IPooled<T> : IDisposable
-    {
-        T Item { get; }
-    }
+    T Item { get; }
 }

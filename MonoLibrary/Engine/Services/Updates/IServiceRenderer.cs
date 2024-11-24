@@ -1,109 +1,100 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.Xna.Framework;
+﻿namespace MonoLibrary.Engine.Services.Updates;
 
-using MonoLibrary.Engine.Objects;
+//public interface IServiceRenderer
+//{
+//    /// <summary>
+//    /// Registers the <paramref name="rendererService"/>.
+//    /// </summary>
+//    /// <param name="rendererService"></param>
+//    /// <returns>An <see cref="IDisposable"/> to unregister.</returns>
+//    IDisposable Register(IRendererService rendererService);
 
-using System;
-using System.Collections.Generic;
+//    /// <summary>
+//    /// Ran after <see cref="Game.BeginDraw"/> if draw call will be done.
+//    /// </summary>
+//    void BeforeDraw();
 
-namespace MonoLibrary.Engine.Services.Updates
-{
-    //public interface IServiceRenderer
-    //{
-    //    /// <summary>
-    //    /// Registers the <paramref name="rendererService"/>.
-    //    /// </summary>
-    //    /// <param name="rendererService"></param>
-    //    /// <returns>An <see cref="IDisposable"/> to unregister.</returns>
-    //    IDisposable Register(IRendererService rendererService);
+//    /// <summary>
+//    /// Ran before <see cref="Game.Draw(GameTime)"/>, hence before <see cref="GameObject.Draw(GameTime)"/>.
+//    /// </summary>
+//    void Draw(float deltaTime);
 
-    //    /// <summary>
-    //    /// Ran after <see cref="Game.BeginDraw"/> if draw call will be done.
-    //    /// </summary>
-    //    void BeforeDraw();
+//    /// <summary>
+//    /// Ran before <see cref="Game.EndDraw"/>.
+//    /// </summary>
+//    void AfterDraw();
+//}
 
-    //    /// <summary>
-    //    /// Ran before <see cref="Game.Draw(GameTime)"/>, hence before <see cref="GameObject.Draw(GameTime)"/>.
-    //    /// </summary>
-    //    void Draw(float deltaTime);
+//public class ServiceDrawer: IServiceRenderer
+//{
+//    private readonly ILogger _logger;
+//    private readonly List<IRendererService> _services = new();
 
-    //    /// <summary>
-    //    /// Ran before <see cref="Game.EndDraw"/>.
-    //    /// </summary>
-    //    void AfterDraw();
-    //}
+//    private readonly Queue<IRendererService> _toRemove = new();
 
-    //public class ServiceDrawer: IServiceRenderer
-    //{
-    //    private readonly ILogger _logger;
-    //    private readonly List<IRendererService> _services = new();
+//    public ServiceDrawer(ILogger<IServiceRenderer> logger)
+//    {
+//        _logger = logger;
+//    }
 
-    //    private readonly Queue<IRendererService> _toRemove = new();
+//    public IDisposable Register(IRendererService rendererService)
+//    {
+//        _services.Add(rendererService);
+//        _logger.LogInformation("Registered {interface}: {type}. Total: {count}", nameof(IRendererService), rendererService.GetType().Name, _services.Count);
 
-    //    public ServiceDrawer(ILogger<IServiceRenderer> logger)
-    //    {
-    //        _logger = logger;
-    //    }
+//        return new Subscription(_toRemove, rendererService);
+//    }
 
-    //    public IDisposable Register(IRendererService rendererService)
-    //    {
-    //        _services.Add(rendererService);
-    //        _logger.LogInformation("Registered {interface}: {type}. Total: {count}", nameof(IRendererService), rendererService.GetType().Name, _services.Count);
+//    public void BeforeDraw()
+//    {
+//        foreach (var service in _services)
+//            service.BeforeDraw();
 
-    //        return new Subscription(_toRemove, rendererService);
-    //    }
+//        ClearQueue();
+//    }
 
-    //    public void BeforeDraw()
-    //    {
-    //        foreach (var service in _services)
-    //            service.BeforeDraw();
+//    public void Draw(float deltaTime)
+//    {
+//        foreach (var service in _services)
+//            service.Draw(deltaTime);
 
-    //        ClearQueue();
-    //    }
+//        ClearQueue();
+//    }
 
-    //    public void Draw(float deltaTime)
-    //    {
-    //        foreach (var service in _services)
-    //            service.Draw(deltaTime);
+//    public void AfterDraw()
+//    {
+//        foreach (var service in _services)
+//            service.AfterDraw();
 
-    //        ClearQueue();
-    //    }
+//        ClearQueue();
+//    }
 
-    //    public void AfterDraw()
-    //    {
-    //        foreach (var service in _services)
-    //            service.AfterDraw();
+//    private void Remove(IRendererService updatableService)
+//    {
+//        _services.Remove(updatableService);
+//        _logger.LogInformation("Removed {interface}: {type}. Total: {count}", nameof(IRendererService), updatableService.GetType().Name, _services.Count);
+//    }
 
-    //        ClearQueue();
-    //    }
+//    private void ClearQueue()
+//    {
+//        while (_toRemove.Count > 0)
+//            Remove(_toRemove.Dequeue());
+//    }
 
-    //    private void Remove(IRendererService updatableService)
-    //    {
-    //        _services.Remove(updatableService);
-    //        _logger.LogInformation("Removed {interface}: {type}. Total: {count}", nameof(IRendererService), updatableService.GetType().Name, _services.Count);
-    //    }
+//    private readonly struct Subscription : IDisposable
+//    {
+//        private readonly Queue<IRendererService> _toRemove;
+//        private readonly IRendererService _updatableService;
 
-    //    private void ClearQueue()
-    //    {
-    //        while (_toRemove.Count > 0)
-    //            Remove(_toRemove.Dequeue());
-    //    }
+//        public Subscription(Queue<IRendererService> actions, IRendererService updatableService)
+//        {
+//            _toRemove = actions;
+//            _updatableService = updatableService;
+//        }
 
-    //    private readonly struct Subscription : IDisposable
-    //    {
-    //        private readonly Queue<IRendererService> _toRemove;
-    //        private readonly IRendererService _updatableService;
-
-    //        public Subscription(Queue<IRendererService> actions, IRendererService updatableService)
-    //        {
-    //            _toRemove = actions;
-    //            _updatableService = updatableService;
-    //        }
-
-    //        public void Dispose()
-    //        {
-    //            _toRemove.Enqueue(_updatableService);
-    //        }
-    //    }
-    //}
-}
+//        public void Dispose()
+//        {
+//            _toRemove.Enqueue(_updatableService);
+//        }
+//    }
+//}

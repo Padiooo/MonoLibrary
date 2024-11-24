@@ -2,10 +2,9 @@
 
 using MonoLibrary.Engine.Services.Updates;
 
-namespace MonoLibrary.Engine.Services.Inputs.KeyboardInputs
+namespace MonoLibrary.Engine.Services.Inputs.KeyboardInputs;
+
+public interface IKeyboardInputService : IUpdaterService
 {
-    public interface IKeyboardInputService : IUpdaterService
-    {
-        IInput CreateInput(Keys key);
-    }
+    IInput CreateInput(Keys key);
 }

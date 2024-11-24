@@ -5,27 +5,26 @@ using Microsoft.Extensions.Logging.Configuration;
 
 using System;
 
-namespace MonoLibrary.Dependency.Loggers.FileLogger
+namespace MonoLibrary.Dependency.Loggers.FileLogger;
+
+public static class FileLoggerExtensions
 {
-    public static class FileLoggerExtensions
+    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder)
     {
-        public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder)
-        {
-            builder.AddConfiguration();
+        builder.AddConfiguration();
 
-            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, FileLoggerProvider>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, FileLoggerProvider>());
 
-            LoggerProviderOptions.RegisterProviderOptions<FileLoggerConfiguration, FileLoggerProvider>(builder.Services);
+        LoggerProviderOptions.RegisterProviderOptions<FileLoggerConfiguration, FileLoggerProvider>(builder.Services);
 
-            return builder;
-        }
+        return builder;
+    }
 
-        public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, Action<FileLoggerConfiguration> configure)
-        {
-            builder.AddFileLogger();
-            builder.Services.Configure(configure);
+    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, Action<FileLoggerConfiguration> configure)
+    {
+        builder.AddFileLogger();
+        builder.Services.Configure(configure);
 
-            return builder;
-        }
+        return builder;
     }
 }

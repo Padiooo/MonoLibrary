@@ -2,16 +2,15 @@
 
 using MonoLibrary.Engine.Components.Colliders;
 
-namespace MonoLibrary.Engine.Components.Interfaces
+namespace MonoLibrary.Engine.Components.Interfaces;
+
+public interface IColliderComponent : IUpdateComponent
 {
-    public interface IColliderComponent : IUpdateComponent
-    {
-        Rectangle Bounds { get; }
+    Rectangle Bounds { get; }
 
-        Layer Layer { get; }
+    Layer Layer { get; }
 
-        void OnCollide(IColliderComponent other);
+    void OnCollide(IColliderComponent other);
 
-        bool IsColliding(IColliderComponent other);
-    }
+    bool IsColliding(IColliderComponent other);
 }

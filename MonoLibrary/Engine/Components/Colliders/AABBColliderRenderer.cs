@@ -3,21 +3,14 @@
 using MonoLibrary.Engine.Objects;
 using MonoLibrary.Helpers;
 
-namespace MonoLibrary.Engine.Components.Colliders
+namespace MonoLibrary.Engine.Components.Colliders;
+
+public class AABBColliderRenderer(GameObject owner, AABBColliderComponent collider) : ColliderRenderer(owner)
 {
-    public class AABBColliderRenderer : ColliderRenderer
+    public AABBColliderComponent Collider { get; } = collider;
+
+    public override void Draw(float time, SpriteBatch spriteBatch)
     {
-        public AABBColliderComponent Collider { get; }
-
-        public AABBColliderRenderer(GameObject owner, AABBColliderComponent collider)
-            : base(owner)
-        {
-            Collider = collider;
-        }
-
-        public override void Draw(float time, SpriteBatch spriteBatch)
-        {
-            spriteBatch.DrawRectStroke(Collider.Bounds, 1, color: Color);
-        }
+        spriteBatch.DrawRectStroke(Collider.Bounds, 1, color: Color);
     }
 }

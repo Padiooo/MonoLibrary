@@ -5,27 +5,26 @@ using Microsoft.Extensions.Logging.Configuration;
 
 using System;
 
-namespace MonoLibrary.Dependency.Loggers.ConsoleLogger
+namespace MonoLibrary.Dependency.Loggers.ConsoleLogger;
+
+public static class ColorConsoleLoggerExtensions
 {
-    public static class ColorConsoleLoggerExtensions
+    public static ILoggingBuilder AddColorConsoleLogger(this ILoggingBuilder builder)
     {
-        public static ILoggingBuilder AddColorConsoleLogger(this ILoggingBuilder builder)
-        {
-            builder.AddConfiguration();
+        builder.AddConfiguration();
 
-            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, ColorConsoleLoggerProvider>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, ColorConsoleLoggerProvider>());
 
-            LoggerProviderOptions.RegisterProviderOptions<ColorConsoleLoggerConfiguration, ColorConsoleLoggerProvider>(builder.Services);
+        LoggerProviderOptions.RegisterProviderOptions<ColorConsoleLoggerConfiguration, ColorConsoleLoggerProvider>(builder.Services);
 
-            return builder;
-        }
+        return builder;
+    }
 
-        public static ILoggingBuilder AddColorConsoleLogger(this ILoggingBuilder builder, Action<ColorConsoleLoggerConfiguration> configure)
-        {
-            builder.AddColorConsoleLogger();
-            builder.Services.Configure(configure);
+    public static ILoggingBuilder AddColorConsoleLogger(this ILoggingBuilder builder, Action<ColorConsoleLoggerConfiguration> configure)
+    {
+        builder.AddColorConsoleLogger();
+        builder.Services.Configure(configure);
 
-            return builder;
-        }
+        return builder;
     }
 }

@@ -1,16 +1,15 @@
 ﻿using System;
 
-namespace MonoLibrary.Engine.Services
+namespace MonoLibrary.Engine.Services;
+
+public interface IGameStateHub
 {
-    public interface IGameStateHub
-    {
-        event Action Exiting;
-    }
+    event Action Exiting;
+}
 
-    public sealed class GameStateHub : IGameStateHub
-    {
-        public event Action Exiting;
+public sealed class GameStateHub : IGameStateHub
+{
+    public event Action Exiting;
 
-        public void OnExit() => Exiting?.Invoke();
-    }
+    public void OnExit() => Exiting?.Invoke();
 }

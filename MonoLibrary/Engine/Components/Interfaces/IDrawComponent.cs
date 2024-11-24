@@ -1,9 +1,8 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 
-namespace MonoLibrary.Engine.Components.Interfaces
+namespace MonoLibrary.Engine.Components.Interfaces;
+
+public interface IDrawComponent : IComponent
 {
-    public interface IDrawComponent : IComponent
-    {
-        void Draw(float time, SpriteBatch spriteBatch);
-    }
+    void Draw(float time, SpriteBatch spriteBatch);
 }

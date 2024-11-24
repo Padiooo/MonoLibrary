@@ -7,65 +7,63 @@ using MonoLibrary.Engine.Services.Updates;
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 
-namespace MonoLibrary.Engine.Services.Collision
+namespace MonoLibrary.Engine.Services.Collision;
+
+public interface ICollisionService : IUpdaterService
 {
-    public interface ICollisionService : IUpdaterService
-    {
-        IDisposable Register(IColliderComponent component);
+    IDisposable Register(IColliderComponent component);
 
-        IEnumerable<IColliderComponent> Query(IColliderComponent area, IList<IColliderComponent> colliders);
+    IEnumerable<IColliderComponent> Query(IColliderComponent area, IList<IColliderComponent> colliders);
+}
+
+public class CollisionService : ICollisionService
+{
+    private readonly IDisposable _subscription;
+    private readonly ICollisionAlgorithm _algorithm;
+    private readonly ILogger _logger;
+
+    private readonly List<IColliderComponent> _colliders = [];
+    private readonly List<IColliderComponent> _toRemove = [];
+
+    public CollisionService(IUpdateLoop updater, ICollisionAlgorithm algorithm, ILogger<CollisionService> logger)
+    {
+        _subscription = updater.Register(this);
+        _algorithm = algorithm;
+        _logger = logger;
     }
 
-    public class CollisionService : ICollisionService
+    public IDisposable Register(IColliderComponent component)
     {
-        private readonly IDisposable _subscription;
-        private readonly ICollisionAlgorithm _algorithm;
-        private readonly ILogger _logger;
+        _colliders.Add(component);
 
-        private readonly List<IColliderComponent> _colliders = new();
-        private readonly List<IColliderComponent> _toRemove = new();
+        _logger.LogTrace("Registered new collider from GameObject {id}. Count {count}.", component.Owner.Id, _colliders.Count);
 
-        public CollisionService(IUpdateLoop updater, ICollisionAlgorithm algorithm, ILogger<CollisionService> logger)
+        return new Subscription<IColliderComponent>(component, _toRemove.Add);
+    }
+
+    public void Update(float deltaTime) { }
+
+    public void AfterUpdate()
+    {
+        foreach (var toRemove in _toRemove)
         {
-            _subscription = updater.Register(this);
-            _algorithm = algorithm;
-            _logger = logger;
+            _colliders.Remove(toRemove);
+            _logger.LogTrace("Unregistered collider from GameObject {id}. Count {count}.", toRemove.Owner.Id, _colliders.Count);
         }
 
-        public IDisposable Register(IColliderComponent component)
-        {
-            _colliders.Add(component);
+        _toRemove.Clear();
 
-            _logger.LogTrace("Registered new collider from GameObject {id}. Count {count}.", component.Owner.Id, _colliders.Count);
+        _algorithm.Resolve(_colliders);
+    }
 
-            return new Subscription<IColliderComponent>(component, _toRemove.Add);
-        }
+    public IEnumerable<IColliderComponent> Query(IColliderComponent area, IList<IColliderComponent> colliders)
+    {
+        return _algorithm.Query(area, colliders);
+    }
 
-        public void Update(float deltaTime) { }
-
-        public void AfterUpdate()
-        {
-            foreach (var toRemove in _toRemove)
-            {
-                _colliders.Remove(toRemove);
-                _logger.LogTrace("Unregistered collider from GameObject {id}. Count {count}.", toRemove.Owner.Id, _colliders.Count);
-            }
-
-            _toRemove.Clear();
-
-            _algorithm.Resolve(_colliders);
-        }
-
-        public IEnumerable<IColliderComponent> Query(IColliderComponent area, IList<IColliderComponent> colliders)
-        {
-            return _algorithm.Query(area, colliders);
-        }
-
-        public void Dispose()
-        {
-            _subscription?.Dispose();
-        }
+    public void Dispose()
+    {
+        _subscription?.Dispose();
     }
 }

@@ -1,9 +1,8 @@
-﻿namespace MonoLibrary.Engine.Network.Messages
+﻿namespace MonoLibrary.Engine.Network.Messages;
+
+public class OwnerShipMessage
 {
-    public class OwnerShipMessage
-    {
-        public int NetId { get; set; }
-        public int[] NetObjectIds { get; set; }
-        public bool Add { get; set; }
-    }
+    public int NetId { get; set; }
+    public int[] NetObjectIds { get; set; }
+    public bool Add { get; set; }
 }

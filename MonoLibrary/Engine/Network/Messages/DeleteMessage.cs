@@ -1,7 +1,6 @@
-﻿namespace MonoLibrary.Engine.Network.Messages
+﻿namespace MonoLibrary.Engine.Network.Messages;
+
+public class DeleteMessage
 {
-    public class DeleteMessage
-    {
-        public int[] NetIds { get; set; }
-    }
+    public int[] NetIds { get; set; }
 }

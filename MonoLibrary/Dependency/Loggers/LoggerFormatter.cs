@@ -1,21 +1,20 @@
 ﻿using System;
 using System.Text;
 
-namespace MonoLibrary.Dependency.Loggers
+namespace MonoLibrary.Dependency.Loggers;
+
+internal static class LoggerFormatter
 {
-    internal static class LoggerFormatter
+    public static string Format(string formated, Exception exception)
     {
-        public static string Format(string formated, Exception exception)
+        if (exception == null)
+            return formated;
+        else
         {
-            if (exception == null)
-                return formated;
-            else
-            {
-                var stb = new StringBuilder(formated)
-                    .AppendLine()
-                    .Append(exception.ToString());
-                return stb.ToString();
-            }
+            var stb = new StringBuilder(formated)
+                .AppendLine()
+                .Append(exception.ToString());
+            return stb.ToString();
         }
     }
 }

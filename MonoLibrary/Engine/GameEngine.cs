@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
 using MonoLibrary.Dependency;
@@ -12,153 +11,152 @@ using MonoLibrary.Engine.Services.Updates;
 using System;
 using System.IO;
 
-namespace MonoLibrary.Engine
+namespace MonoLibrary.Engine;
+
+public class GameEngine : Game
 {
-    public class GameEngine : Game
+    private IUpdateLoop updater;
+
+    public IConfiguration Configuration { get; private set; }
+
+    private IServiceScope scope;
+    public new IServiceProvider Services => scope.ServiceProvider;
+
+    private readonly GameStateHub _gameState = new();
+    public IGameStateHub GameState => _gameState;
+
+    private ILogger gameLogger;
+    public ILogger GameLogger => gameLogger;
+
+    public GameEngine()
     {
-        private IUpdateLoop updater;
+        Content.RootDirectory = "Content";
+        IsMouseVisible = true;
+    }
 
-        public IConfiguration Configuration { get; private set; }
+    /// <summary>
+    /// Initializes <see cref="Configuration"/> and <see cref="Services"/>.
+    /// </summary>
+    protected override void Initialize()
+    {
+        var configBuilder = GetConfigurationBuilder();
+        OnConfigure(configBuilder);
+        Configuration = configBuilder.Build();
 
-        private IServiceScope scope;
-        public new IServiceProvider Services => scope.ServiceProvider;
+        var services = GetServiceCollection();
+        OnConfigureServices(services, Configuration);
 
-        private readonly GameStateHub _gameState = new();
-        public IGameStateHub GameState => _gameState;
-
-        private ILogger gameLogger;
-        public ILogger GameLogger => gameLogger;
-
-        public GameEngine()
+        scope = services.BuildServiceProvider(new ServiceProviderOptions()
         {
-            Content.RootDirectory = "Content";
-            IsMouseVisible = true;
-        }
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        }).CreateScope();
 
-        /// <summary>
-        /// Initializes <see cref="Configuration"/> and <see cref="Services"/>.
-        /// </summary>
-        protected override void Initialize()
+        gameLogger = scope.ServiceProvider.GetService<ILogger<GameEngine>>();
+
+        base.Initialize();
+    }
+
+    protected override void LoadContent()
+    {
+        // TODO: use this.Content to load your game content here
+
+    }
+
+    protected override void BeginRun()
+    {
+        base.BeginRun();
+
+        updater ??= Services.GetRequiredService<IUpdateLoop>();
+    }
+
+    protected override void Update(GameTime gameTime)
+    {
+        try
         {
-            var configBuilder = GetConfigurationBuilder();
-            OnConfigure(configBuilder);
-            Configuration = configBuilder.Build();
+            updater.BeforeUpdate();
 
-            var services = GetServiceCollection();
-            OnConfigureServices(services, Configuration);
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+                Exit();
 
-            scope = services.BuildServiceProvider(new ServiceProviderOptions()
-            {
-                ValidateOnBuild = true,
-                ValidateScopes = true
-            }).CreateScope();
+            // TODO: Add your update logic here
 
-            gameLogger = scope.ServiceProvider.GetService<ILogger<GameEngine>>();
+            updater.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
 
-            base.Initialize();
+            base.Update(gameTime);
+
+            updater.AfterUpdate();
         }
-
-        protected override void LoadContent()
+        catch (Exception e)
         {
-            // TODO: use this.Content to load your game content here
-
+            gameLogger.LogCritical(e, "Error in update loop.");
         }
+    }
 
-        protected override void BeginRun()
+    protected override void Draw(GameTime gameTime)
+    {
+        try
         {
-            base.BeginRun();
-
-            updater ??= Services.GetRequiredService<IUpdateLoop>();
+            base.Draw(gameTime);
         }
-
-        protected override void Update(GameTime gameTime)
+        catch (Exception e)
         {
-            try
-            {
-                updater.BeforeUpdate();
-
-                if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-                    Exit();
-
-                // TODO: Add your update logic here
-
-                updater.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
-
-                base.Update(gameTime);
-
-                updater.AfterUpdate();
-            }
-            catch (Exception e)
-            {
-                gameLogger.LogCritical(e, "Error in update loop.");
-            }
+            gameLogger.LogCritical(e, "Error in draw loop.");
         }
+    }
 
-        protected override void Draw(GameTime gameTime)
+    protected static IConfigurationBuilder GetConfigurationBuilder()
+    {
+        var environmentName = Environment.GetEnvironmentVariable("Hosting:Environment");
+
+        return new ConfigurationBuilder()
+                        .SetBasePath(Directory.GetCurrentDirectory())
+                        .AddJsonFile("appsettings.json", true)
+                        .AddJsonFile($"appsettings.{environmentName ?? string.Empty}.json", true);
+    }
+
+    protected virtual void OnConfigure(IConfigurationBuilder builder)
+    {
+
+    }
+
+    protected IServiceCollection GetServiceCollection()
+    {
+        var services = new ServiceCollection();
+        services.AddSettings(typeof(GameEngine).Assembly, Configuration);
+        services.AddSingleton<GameEngine>(this);
+        services.AddSingleton<Game>(this);
+        services.Configure<IConfiguration>(Configuration);
+
+        services.AddOptions();
+
+        services.AddLogging(builder =>
         {
-            try
-            {
-                base.Draw(gameTime);
-            }
-            catch (Exception e)
-            {
-                gameLogger.LogCritical(e, "Error in draw loop.");
-            }
-        }
+            builder.AddConfiguration(Configuration.GetSection("Logging"));
+            OnConfigureLogging(builder);
+        });
 
-        protected static IConfigurationBuilder GetConfigurationBuilder()
-        {
-            var environmentName = Environment.GetEnvironmentVariable("Hosting:Environment");
+        services.AddSingleton<IUpdateLoop, ServiceUpdater>(provider => ActivatorUtilities.CreateInstance<ServiceUpdater>(provider));
+        //services.AddSingleton<IServiceRenderer, ServiceDrawer>(provider => ActivatorUtilities.CreateInstance<ServiceDrawer>(provider));
 
-            return new ConfigurationBuilder()
-                            .SetBasePath(Directory.GetCurrentDirectory())
-                            .AddJsonFile("appsettings.json", true)
-                            .AddJsonFile($"appsettings.{environmentName ?? string.Empty}.json", true);
-        }
+        services.AddSingleton<IGameStateHub, GameStateHub>(_ => _gameState);
 
-        protected virtual void OnConfigure(IConfigurationBuilder builder)
-        {
+        return services;
+    }
 
-        }
+    protected virtual void OnConfigureLogging(ILoggingBuilder logBuilder)
+    {
 
-        protected IServiceCollection GetServiceCollection()
-        {
-            var services = new ServiceCollection();
-            services.AddSettings(typeof(GameEngine).Assembly, Configuration);
-            services.AddSingleton<GameEngine>(this);
-            services.AddSingleton<Game>(this);
-            services.Configure<IConfiguration>(Configuration);
+    }
 
-            services.AddOptions();
+    protected virtual void OnConfigureServices(IServiceCollection services, IConfiguration configuration)
+    {
 
-            services.AddLogging(builder =>
-            {
-                builder.AddConfiguration(Configuration.GetSection("Logging"));
-                OnConfigureLogging(builder);
-            });
+    }
 
-            services.AddSingleton<IUpdateLoop, ServiceUpdater>(provider => ActivatorUtilities.CreateInstance<ServiceUpdater>(provider));
-            //services.AddSingleton<IServiceRenderer, ServiceDrawer>(provider => ActivatorUtilities.CreateInstance<ServiceDrawer>(provider));
-
-            services.AddSingleton<IGameStateHub, GameStateHub>(_ => _gameState);
-
-            return services;
-        }
-
-        protected virtual void OnConfigureLogging(ILoggingBuilder logBuilder)
-        {
-
-        }
-
-        protected virtual void OnConfigureServices(IServiceCollection services, IConfiguration configuration)
-        {
-
-        }
-
-        protected override void OnExiting(object sender, EventArgs args)
-        {
-            _gameState.OnExit();
-            scope.Dispose();
-        }
+    protected override void OnExiting(object sender, EventArgs args)
+    {
+        _gameState.OnExit();
+        scope.Dispose();
     }
 }
